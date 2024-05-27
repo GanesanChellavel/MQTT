@@ -1,4 +1,4 @@
-mqtt led control topic device/led
+//mqtt led control topic device/led  nodeMCU 8266
 
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
