@@ -10,7 +10,7 @@ Using ESP 8266 or esp32
 // Replace these with your network and MQTT broker credentials
 const char* ssid = "MURNANE";
 const char* password = "Tenant@SgWX";
-const char* mqtt_server = "emqtt32.spaceagelabs.com.sg";
+const char* mqtt_server = "emqtt32.test.com";
 const int mqtt_port = 1883; // or 8883 for secure MQTT
 const char* mqtt_user = "aws";
 const char* mqtt_password = "aws@1234";
