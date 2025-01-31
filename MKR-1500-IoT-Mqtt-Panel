@@ -1,0 +1,119 @@
+Motor ON/OFF using MKR NB 1500 - IOT MQTT PANEL 
+
+#include <MKRNB.h>
+#include <PubSubClient.h>
+#include <ArduinoJson.h>
+ 
+// The MKRNB lib needs this even if it's blank; My SIM card does not require a PIN
+const char PINNUMBER[] = "";
+const char APN[] = "hologram";
+ 
+// MQTT info
+const char* mqtt_server = "......................";
+const int port = 1883;
+ 
+const char* clientID = "MKRNB1500";
+const char* topic = "sal/aws/643192";
+const char* username = ".........";
+const char* password = "......";
+ 
+// Initialize the library instance
+NBClient LTEclient;
+GPRS gprs;
+NB nbAccess;
+ 
+// Connect the PubSub client
+PubSubClient client(LTEclient);
+ 
+// JSON document size
+const size_t JSON_BUFFER_SIZE = JSON_OBJECT_SIZE(50);
+
+// Motor relay pin
+const int motorPin = 7; // Choose an appropriate pin for controlling the motor relay
+
+// Callback function for MQTT messages
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  
+  String message = "";
+  for (unsigned int i = 0; i < length; i++) {
+    message += (char)payload[i];
+  }
+  Serial.println(message);
+  
+  // Control the motor based on the message
+  if (message == "ON") {
+    digitalWrite(motorPin, HIGH); // Turn motor on
+    Serial.println("Motor ON");
+  } else if (message == "OFF") {
+    digitalWrite(motorPin, LOW); // Turn motor off
+    Serial.println("Motor OFF");
+  }
+}
+ 
+// Connection and reconnection function
+void reconnect() {
+  while (!client.connected()) {
+    // Attempt to connect
+    Serial.println("Connection attempt to broker");
+    if (client.connect(clientID, username, password)) {
+      Serial.println("Connected");
+      client.subscribe(topic);
+    } else {
+      Serial.print("Failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 2 seconds");
+      // Wait 2 seconds before retrying
+      delay(2000);
+    }
+  }
+}
+ 
+void setup() {
+  // Initialize serial communications and wait for port to open
+  Serial.begin(115200);
+ 
+  while (!Serial) {
+    ; // Wait for the serial port to connect. Needed for native USB port only
+  }
+ 
+  Serial.println("Starting up");
+ 
+  // Set the motor pin as an output
+  pinMode(motorPin, OUTPUT);
+  digitalWrite(motorPin, LOW); // Initially turn off the motor
+ 
+  // Connection state
+  bool connected = false;
+ 
+  // Attach to the GPRS network with the APN, login, and password
+  while (!connected) {
+    if ((nbAccess.begin(PINNUMBER) == NB_READY) && (gprs.attachGPRS() == GPRS_READY)) {
+      connected = true;
+    } else {
+      Serial.println("Not connected");
+      delay(1000);
+    }
+  }
+ 
+  Serial.println("Modem started and attached to GPRS network");
+ 
+  client.setServer(mqtt_server, port);
+  client.setCallback(callback);
+  Serial.println("Server details set");
+}
+ 
+void loop() {
+  // If the connection drops, then reconnect it
+  if (!client.connected()) {
+    reconnect();
+  }
+ 
+  // This should be called regularly to allow the client to process incoming messages
+  // and maintain its connection to the server.
+  client.loop();
+ 
+  delay(1000);
+}
